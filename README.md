@@ -12,10 +12,15 @@ cd CustumerChurning
 
 ### 2. Create Virtual Environment
 ```bash
+# Create virtual environment
 python -m venv venv
 
-# Windows
+# Activate virtual environment
+# Windows (PowerShell)
 .\venv\Scripts\activate
+
+# Windows (CMD)
+venv\Scripts\activate.bat
 
 # Linux/Mac
 source venv/bin/activate
@@ -26,26 +31,26 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Run Training (if models not present)
+### 4. Run Training (Optional - only if models not present)
 ```bash
 python src/train_models.py
 ```
 
 ### 5. Start the Application
 
-**Terminal 1 - API Server:**
+**Terminal 1 - Start API Server:**
 ```bash
 uvicorn app.api:app --reload --port 8000
 ```
 
-**Terminal 2 - Web Interface:**
+**Terminal 2 - Start Web Interface:**
 ```bash
 streamlit run app/streamlit_app.py
 ```
 
-### 6. Access the App
-- **Web App:** http://localhost:8501
-- **API Docs:** http://localhost:8000/docs
+### 6. Access the Application
+- 🌐 **Web App:** http://localhost:8501
+- 📚 **API Docs:** http://localhost:8000/docs
 
 ---
 
@@ -54,28 +59,53 @@ streamlit run app/streamlit_app.py
 ```
 CustumerChurning/
 ├── app/
-│   ├── api.py              # FastAPI backend
-│   └── streamlit_app.py    # Streamlit frontend
+│   ├── api.py                  # FastAPI backend with model selection
+│   └── streamlit_app.py        # Streamlit web interface
+│
 ├── src/
-│   ├── preprocessing.py    # Data preprocessing
-│   ├── train_models.py     # Model training script
-│   └── data_validation.py  # Data validation
-├── models/                 # Trained models & visualizations
-├── data/                   # Dataset
-├── notebooks/              # Jupyter notebooks
-└── requirements.txt        # Dependencies
+│   ├── __init__.py             # Package init
+│   ├── preprocessing.py        # Data preprocessing & feature engineering
+│   ├── train_models.py         # Model training script
+│   └── data_validation.py      # Data validation with schema
+│
+├── models/
+│   ├── best_model.pkl          # Best performing model (Neural Network)
+│   ├── logistic_regression.pkl # Logistic Regression model
+│   ├── random_forest.pkl       # Random Forest model
+│   ├── xgboost.pkl             # XGBoost model
+│   ├── neural_network.h5       # Neural Network (Keras)
+│   ├── preprocessor.pkl        # Preprocessing pipeline
+│   └── *.png                   # Visualization charts
+│
+├── data/
+│   └── Telco-Customer-Churn.csv  # Dataset
+│
+├── notebooks/                  # Jupyter notebooks for EDA
+├── tests/                      # Unit tests
+├── requirements.txt            # Python dependencies
+├── .gitignore                  # Git ignore rules
+└── README.md                   # This file
 ```
 
 ---
 
 ## 🎯 Features
 
+### Machine Learning
 - **4 ML Models:** Logistic Regression, Random Forest, XGBoost, Neural Network
-- **Model Selection:** Choose which model to use in the web app
-- **Interactive UI:** Streamlit interface with sliders, dropdowns
-- **REST API:** FastAPI with automatic documentation
-- **Risk Assessment:** Low/Medium/High risk classification
+- **Feature Engineering:** Tenure Groups, Number of Services
+- **Class Balancing:** SMOTE (applied correctly after train/test split)
+
+### Web Application
+- **Model Selection:** Choose between 4 trained models
+- **Interactive UI:** Sliders, radio buttons, dropdowns for all customer fields
+- **Color-coded Results:** Green (Low risk), Yellow (Medium risk), Red (High risk)
 - **Business Recommendations:** Actionable retention strategies
+
+### API
+- **REST API:** FastAPI with automatic Swagger documentation
+- **Endpoints:** `/predict`, `/health`, `/model-info`
+- **Model Selection:** Pass `model_name` parameter to choose model
 
 ---
 
@@ -102,20 +132,25 @@ CustumerChurning/
 
 ## 🛠️ Technologies
 
-- Python 3.8+
-- FastAPI
-- Streamlit
-- Scikit-learn
-- XGBoost
-- TensorFlow/Keras
-- Pandas, NumPy
-- Matplotlib, Seaborn
+| Category | Technologies |
+|----------|-------------|
+| **ML/DL** | Scikit-learn, XGBoost, TensorFlow/Keras |
+| **Data** | Pandas, NumPy, imbalanced-learn (SMOTE) |
+| **Visualization** | Matplotlib, Seaborn |
+| **API** | FastAPI, Uvicorn, Pydantic |
+| **Frontend** | Streamlit |
 
 ---
 
-## 📝 License
+## 📋 Requirements
 
-MIT License
+See `requirements.txt` for full list. Main dependencies:
+- Python 3.8+
+- pandas, numpy, scikit-learn
+- xgboost, tensorflow
+- fastapi, uvicorn
+- streamlit
+- imbalanced-learn
 
 ---
 
