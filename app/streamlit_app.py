@@ -1,12 +1,13 @@
 """
 Streamlit Frontend for Telco Customer Churn Prediction
-Interactive web interface for churn prediction
+Standalone version for Streamlit Cloud deployment
 """
 
 import streamlit as st
-import requests
-import json
 import pandas as pd
+import numpy as np
+import joblib
+import os
 
 # Page config
 st.set_page_config(
@@ -25,137 +26,192 @@ st.markdown("""
         text-align: center;
         margin-bottom: 2rem;
     }
-    .prediction-box {
-        padding: 2rem;
-        border-radius: 10px;
-        text-align: center;
-        margin: 1rem 0;
-    }
-    .low-risk {
-        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-        border: 2px solid #28a745;
-    }
-    .medium-risk {
-        background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
-        border: 2px solid #ffc107;
-    }
-    .high-risk {
-        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-        border: 2px solid #dc3545;
-    }
-    .metric-card {
-        background: #f8f9fa;
-        padding: 1rem;
-        border-radius: 8px;
-        text-align: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
     .section-header {
         font-size: 1.3rem;
         font-weight: bold;
         color: #495057;
-        margin-top: 1.5rem;
-        margin-bottom: 1rem;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
         padding-bottom: 0.5rem;
         border-bottom: 2px solid #dee2e6;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# API URL
-API_URL = "http://localhost:8000"
+# Load models (cached for performance)
+@st.cache_resource
+def load_models():
+    """Load all models and preprocessor"""
+    models_dir = os.path.join(os.path.dirname(__file__), "..", "models")
+    
+    models = {}
+    preprocessor = None
+    
+    try:
+        # Load preprocessor
+        preprocessor_path = os.path.join(models_dir, "preprocessor.pkl")
+        if os.path.exists(preprocessor_path):
+            preprocessor = joblib.load(preprocessor_path)
+        
+        # Load models
+        model_files = {
+            "Neural Network": "best_model.pkl",
+            "Logistic Regression": "logistic_regression.pkl",
+            "Random Forest": "random_forest.pkl",
+            "XGBoost": "xgboost.pkl"
+        }
+        
+        for model_name, filename in model_files.items():
+            model_path = os.path.join(models_dir, filename)
+            if os.path.exists(model_path):
+                models[model_name] = joblib.load(model_path)
+                
+    except Exception as e:
+        st.error(f"Error loading models: {e}")
+    
+    return models, preprocessor
+
+# Feature engineering functions
+def get_tenure_group(tenure):
+    if tenure <= 12:
+        return '0-12'
+    elif tenure <= 24:
+        return '12-24'
+    elif tenure <= 48:
+        return '24-48'
+    elif tenure <= 72:
+        return '48-72'
+    else:
+        return '72+'
+
+def preprocess_customer(customer_data, preprocessor):
+    """Preprocess customer data for prediction"""
+    df = pd.DataFrame([customer_data])
+    
+    # Add dummy columns for preprocessing
+    df['customerID'] = 'CLOUD_USER'
+    df['Churn'] = 'No'
+    
+    # Feature Engineering: Add Tenure_Group
+    df['Tenure_Group'] = df['tenure'].apply(get_tenure_group)
+    
+    # Feature Engineering: Add Number_of_Services
+    service_cols = ['OnlineSecurity', 'OnlineBackup', 'DeviceProtection', 
+                    'TechSupport', 'StreamingTV', 'StreamingMovies']
+    df['Number_of_Services'] = df[service_cols].apply(
+        lambda row: sum(row == 'Yes'), axis=1
+    )
+    
+    # Label Encoding for binary columns
+    binary_mappings = {
+        'gender': {'Female': 0, 'Male': 1},
+        'Partner': {'No': 0, 'Yes': 1},
+        'Dependents': {'No': 0, 'Yes': 1},
+        'PhoneService': {'No': 0, 'Yes': 1},
+        'PaperlessBilling': {'No': 0, 'Yes': 1}
+    }
+    
+    for col, mapping in binary_mappings.items():
+        df[col] = df[col].map(mapping)
+    
+    # Apply preprocessor
+    X = preprocessor.transform(df)
+    
+    return X
+
+# Load models
+models, preprocessor = load_models()
 
 # Header
 st.markdown('<div class="main-header">📊 Telco Customer Churn Predictor</div>', unsafe_allow_html=True)
-st.markdown("---")
 
-# Check API health
-try:
-    health = requests.get(f"{API_URL}/health", timeout=2).json()
-    if health.get('model_loaded'):
-        st.success("✅ API Connected & Model Loaded")
-    else:
-        st.warning("⚠️ API Connected but model not loaded. Run training notebook first.")
-except:
-    st.error("❌ Cannot connect to API. Start the API with: `uvicorn app.api:app --reload --port 8000`")
-    st.info("📝 You can still fill in the form below. The prediction will work once API is running.")
+# Show loaded models
+if models:
+    st.success(f"✅ Models Loaded: {', '.join(models.keys())}")
+else:
+    st.error("❌ No models found. Please ensure model files are in the models/ directory.")
+
+st.markdown("---")
 
 # Model selection in sidebar
 with st.sidebar:
     st.markdown("## 🎯 Model Selection")
+    available_models = list(models.keys()) if models else ["No models available"]
     selected_model = st.selectbox(
         "Choose Model:",
-        ["Neural Network", "Logistic Regression", "Random Forest", "XGBoost"],
+        available_models,
         index=0,
         help="Select which trained model to use for prediction"
     )
     st.info(f"Currently using: **{selected_model}**")
-
-# Create columns for input
-col1, col2, col3 = st.columns(3)
-
-# Column 1: Demographics
-with col1:
-    st.markdown('<div class="section-header">👤 Demographics</div>', unsafe_allow_html=True)
     
-    gender = st.radio("Gender", ["Male", "Female"], horizontal=True)
-    senior_citizen = st.radio("Senior Citizen", ["No", "Yes"], horizontal=True)
+    st.markdown("---")
+    st.markdown("## ℹ️ About")
+    st.markdown("""
+    **Telco Customer Churn Prediction**
+    
+    Predict whether a telecom customer is likely to churn.
+    
+    **Author:** Ngo Anh Hieu  
+    **GitHub:** [Toogoodtoac](https://github.com/Toogoodtoac/CustumerChurning)
+    """)
+
+# Use st.form to prevent reloading on every input change
+with st.form("prediction_form"):
+    st.markdown("### 📝 Enter Customer Information")
+    
+    # Create columns for input
+    col1, col2, col3 = st.columns(3)
+    
+    # Column 1: Demographics
+    with col1:
+        st.markdown('<div class="section-header">👤 Demographics</div>', unsafe_allow_html=True)
+        
+        gender = st.radio("Gender", ["Male", "Female"], horizontal=True)
+        senior_citizen = st.radio("Senior Citizen", ["No", "Yes"], horizontal=True)
+        partner = st.radio("Partner", ["Yes", "No"], horizontal=True)
+        dependents = st.radio("Dependents", ["Yes", "No"], horizontal=True)
+    
+    # Column 2: Services
+    with col2:
+        st.markdown('<div class="section-header">📱 Services</div>', unsafe_allow_html=True)
+        
+        phone_service = st.radio("Phone Service", ["Yes", "No"], horizontal=True)
+        multiple_lines = st.selectbox("Multiple Lines", ["Yes", "No", "No phone service"])
+        internet_service = st.selectbox("Internet Service", ["No", "DSL", "Fiber optic"])
+        online_security = st.selectbox("Online Security", ["Yes", "No", "No internet service"])
+        online_backup = st.selectbox("Online Backup", ["Yes", "No", "No internet service"])
+        device_protection = st.selectbox("Device Protection", ["Yes", "No", "No internet service"])
+        tech_support = st.selectbox("Tech Support", ["Yes", "No", "No internet service"])
+        streaming_tv = st.selectbox("Streaming TV", ["Yes", "No", "No internet service"])
+        streaming_movies = st.selectbox("Streaming Movies", ["Yes", "No", "No internet service"])
+    
+    # Column 3: Account
+    with col3:
+        st.markdown('<div class="section-header">💼 Account Info</div>', unsafe_allow_html=True)
+        
+        tenure = st.slider("Tenure (months)", 0, 72, 12)
+        contract = st.selectbox("Contract", ["Month-to-month", "One year", "Two year"])
+        paperless_billing = st.radio("Paperless Billing", ["Yes", "No"], horizontal=True)
+        payment_method = st.selectbox("Payment Method", [
+            "Electronic check",
+            "Mailed check",
+            "Bank transfer (automatic)",
+            "Credit card (automatic)"
+        ])
+        monthly_charges = st.slider("Monthly Charges ($)", 0.0, 150.0, 70.0, 0.5)
+        total_charges = st.slider("Total Charges ($)", 0.0, 9000.0, 840.0, 10.0)
+    
+    st.markdown("---")
+    
+    # Submit button inside form
+    submitted = st.form_submit_button("🔮 Predict Churn", type="primary", use_container_width=True)
+
+# Process form submission
+if submitted and models and preprocessor:
+    # Convert senior citizen
     senior_citizen_val = 1 if senior_citizen == "Yes" else 0
-    partner = st.radio("Partner", ["Yes", "No"], horizontal=True)
-    dependents = st.radio("Dependents", ["Yes", "No"], horizontal=True)
-
-# Column 2: Services
-with col2:
-    st.markdown('<div class="section-header">📱 Services</div>', unsafe_allow_html=True)
     
-    phone_service = st.radio("Phone Service", ["Yes", "No"], horizontal=True)
-    
-    if phone_service == "Yes":
-        multiple_lines = st.selectbox("Multiple Lines", ["Yes", "No"])
-    else:
-        multiple_lines = "No phone service"
-    
-    internet_service = st.selectbox("Internet Service", ["No", "DSL", "Fiber optic"])
-    
-    if internet_service != "No":
-        online_security = st.selectbox("Online Security", ["Yes", "No"])
-        online_backup = st.selectbox("Online Backup", ["Yes", "No"])
-        device_protection = st.selectbox("Device Protection", ["Yes", "No"])
-        tech_support = st.selectbox("Tech Support", ["Yes", "No"])
-        streaming_tv = st.selectbox("Streaming TV", ["Yes", "No"])
-        streaming_movies = st.selectbox("Streaming Movies", ["Yes", "No"])
-    else:
-        online_security = "No internet service"
-        online_backup = "No internet service"
-        device_protection = "No internet service"
-        tech_support = "No internet service"
-        streaming_tv = "No internet service"
-        streaming_movies = "No internet service"
-
-# Column 3: Account
-with col3:
-    st.markdown('<div class="section-header">💼 Account Info</div>', unsafe_allow_html=True)
-    
-    tenure = st.slider("Tenure (months)", 0, 72, 12)
-    contract = st.selectbox("Contract", ["Month-to-month", "One year", "Two year"])
-    paperless_billing = st.radio("Paperless Billing", ["Yes", "No"], horizontal=True)
-    payment_method = st.selectbox("Payment Method", [
-        "Electronic check",
-        "Mailed check",
-        "Bank transfer (automatic)",
-        "Credit card (automatic)"
-    ])
-    monthly_charges = st.slider("Monthly Charges ($)", 0.0, 150.0, 70.0, 0.5)
-    total_charges = st.slider("Total Charges ($)", 0.0, 9000.0, float(tenure * monthly_charges), 10.0)
-
-st.markdown("---")
-
-# Prediction Button
-col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
-with col_btn2:
-    predict_button = st.button("🔮 Predict Churn", type="primary", use_container_width=True)
-
-if predict_button:
     # Prepare data
     customer_data = {
         "gender": gender,
@@ -176,83 +232,75 @@ if predict_button:
         "PaperlessBilling": paperless_billing,
         "PaymentMethod": payment_method,
         "MonthlyCharges": monthly_charges,
-        "TotalCharges": total_charges,
-        "model_name": selected_model
+        "TotalCharges": total_charges
     }
     
     try:
-        # Call API
-        response = requests.post(
-            f"{API_URL}/predict",
-            json=customer_data,
-            timeout=10
-        )
+        with st.spinner("🔄 Making prediction..."):
+            # Preprocess
+            X = preprocess_customer(customer_data, preprocessor)
+            
+            # Get selected model
+            model = models[selected_model]
+            
+            # Predict
+            prediction = model.predict(X)[0]
+            probability = model.predict_proba(X)[0][1]
         
-        if response.status_code == 200:
-            result = response.json()
-            
-            # Display result
-            st.markdown("---")
-            st.markdown("## 📋 Prediction Result")
-            
-            # Determine style based on risk
-            risk = result['risk_level']
-            if risk == "Low":
-                box_class = "low-risk"
-                emoji = "✅"
-            elif risk == "Medium":
-                box_class = "medium-risk"
-                emoji = "⚠️"
-            else:
-                box_class = "high-risk"
-                emoji = "🚨"
-            
-            # Create result display
-            col_r1, col_r2, col_r3 = st.columns(3)
-            
-            with col_r1:
-                st.metric(
-                    "Churn Prediction",
-                    f"{emoji} {result['churn_prediction']}",
-                    delta=None
-                )
-            
-            with col_r2:
-                prob_pct = result['churn_probability'] * 100
-                st.metric(
-                    "Churn Probability",
-                    f"{prob_pct:.1f}%",
-                    delta=None
-                )
-            
-            with col_r3:
-                st.metric(
-                    "Risk Level",
-                    f"{result['risk_level']}",
-                    delta=None
-                )
-            
-            # Recommendation box
-            st.markdown("### 💡 Recommendation")
-            if risk == "High":
-                st.error(result['recommendation'])
-            elif risk == "Medium":
-                st.warning(result['recommendation'])
-            else:
-                st.success(result['recommendation'])
-            
-            # Show customer profile summary
-            with st.expander("📊 Customer Profile Summary"):
-                profile_df = pd.DataFrame([customer_data]).T
-                profile_df.columns = ['Value']
-                st.dataframe(profile_df, use_container_width=True)
-                
+        # Determine risk level
+        if probability < 0.3:
+            risk = "Low"
+            recommendation = "Customer is stable. Continue current service."
+        elif probability < 0.6:
+            risk = "Medium"
+            recommendation = "Consider proactive engagement. Offer loyalty discount."
         else:
-            st.error(f"API Error: {response.json().get('detail', 'Unknown error')}")
+            risk = "High"
+            recommendation = "⚠️ Urgent attention needed! Offer 20% discount and free service upgrade."
+        
+        # Display result
+        st.markdown("---")
+        st.markdown("## 📋 Prediction Result")
+        
+        # Create result display
+        col_r1, col_r2, col_r3, col_r4 = st.columns(4)
+        
+        with col_r1:
+            if prediction == 1:
+                st.metric("Churn Prediction", "🚨 YES")
+            else:
+                st.metric("Churn Prediction", "✅ NO")
+        
+        with col_r2:
+            prob_pct = probability * 100
+            st.metric("Churn Probability", f"{prob_pct:.1f}%")
+        
+        with col_r3:
+            if risk == "Low":
+                st.metric("Risk Level", "🟢 Low")
+            elif risk == "Medium":
+                st.metric("Risk Level", "🟡 Medium")
+            else:
+                st.metric("Risk Level", "🔴 High")
+        
+        with col_r4:
+            st.metric("Model Used", selected_model)
+        
+        # Recommendation box
+        st.markdown("### 💡 Recommendation")
+        if risk == "High":
+            st.error(recommendation)
+        elif risk == "Medium":
+            st.warning(recommendation)
+        else:
+            st.success(recommendation)
+        
+        # Show customer profile summary
+        with st.expander("📊 Customer Profile Summary"):
+            profile_df = pd.DataFrame([customer_data]).T
+            profile_df.columns = ['Value']
+            st.dataframe(profile_df, use_container_width=True)
             
-    except requests.exceptions.ConnectionError:
-        st.error("❌ Cannot connect to API. Please ensure the API server is running.")
-        st.code("cd d:\\CustomerChurning && .\\venv\\Scripts\\activate && uvicorn app.api:app --reload --port 8000", language="powershell")
     except Exception as e:
         st.error(f"Error: {str(e)}")
 
@@ -260,40 +308,7 @@ if predict_button:
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #6c757d; font-size: 0.9rem;'>
-    📊 Telco Customer Churn Prediction System | Built with Streamlit & FastAPI<br>
-    🎯 Using Machine Learning to retain customers
+    📊 Telco Customer Churn Prediction | Author: Ngo Anh Hieu | 
+    <a href="https://github.com/Toogoodtoac/CustumerChurning">GitHub</a>
 </div>
 """, unsafe_allow_html=True)
-
-# Sidebar with info
-with st.sidebar:
-    st.markdown("## ℹ️ About")
-    st.markdown("""
-    This application predicts whether a telecom customer is likely to churn (leave the service).
-    
-    **Features used:**
-    - Demographics (gender, senior citizen, partner, dependents)
-    - Services (phone, internet, streaming, security)
-    - Account info (tenure, contract, billing, charges)
-    
-    **Models available:**
-    - Logistic Regression
-    - Random Forest
-    - XGBoost
-    - Neural Network
-    
-    **API Endpoints:**
-    - `GET /` - API info
-    - `GET /health` - Health check
-    - `POST /predict` - Make prediction
-    """)
-    
-    st.markdown("---")
-    st.markdown("### 🚀 Quick Start")
-    st.code("""
-# Start API
-uvicorn app.api:app --port 8000
-
-# Start Streamlit (in another terminal)
-streamlit run app/streamlit_app.py
-    """, language="bash")

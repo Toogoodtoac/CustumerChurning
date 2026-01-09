@@ -50,7 +50,7 @@ Thumbs.db
 *.fdb_latexmk
 
 # Project specific
-*.pkl
+# *.pkl  # Commented out to allow models for Streamlit Cloud
 *.joblib
 
 # Keep models but ignore large files
@@ -62,6 +62,5 @@ archive.zip
 # Report files (generated)
 Report.md
 Report.pdf
-Technical_Report.tex
 Technical_Report.pdf
 generate_pdf.py
