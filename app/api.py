@@ -259,14 +259,14 @@ async def predict_churn(customer: CustomerProfile):
 
 @app.get("/model-info")
 async def model_info():
-    """Get information about the loaded model"""
-    if model is None:
-        return {"message": "Model not loaded"}
+    """Get information about the loaded models"""
+    if len(models) == 0:
+        return {"message": "No models loaded"}
     
     return {
-        "model_type": type(model).__name__,
-        "features_count": getattr(model, 'n_features_in_', 'N/A'),
-        "model_path": MODEL_PATH
+        "models_loaded": list(models.keys()),
+        "preprocessor_loaded": preprocessor is not None,
+        "total_models": len(models)
     }
 
 

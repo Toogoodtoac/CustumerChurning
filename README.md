@@ -74,7 +74,7 @@ CustumerChurning/
 │   └── *.png                   # Visualization charts
 │
 ├── data/
-│   └── Telco-Customer-Churn.csv  # Dataset
+│   └── WA_Fn-UseC_-Telco-Customer-Churn.csv  # Dataset
 │
 ├── notebooks/                  # Jupyter notebooks for EDA
 ├── requirements.txt            # Python dependencies
