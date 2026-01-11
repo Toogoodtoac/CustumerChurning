@@ -92,6 +92,9 @@ def preprocess_customer(customer_data, preprocessor):
     df['customerID'] = 'CLOUD_USER'
     df['Churn'] = 'No'
     
+    # Convert TotalCharges to ensure numeric type
+    df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors='coerce').fillna(0)
+    
     # Feature Engineering: Add Tenure_Group
     df['Tenure_Group'] = df['tenure'].apply(get_tenure_group)
     
@@ -112,7 +115,13 @@ def preprocess_customer(customer_data, preprocessor):
     }
     
     for col, mapping in binary_mappings.items():
-        df[col] = df[col].map(mapping)
+        if col in df.columns:
+            df[col] = df[col].map(mapping)
+    
+    # Debug: Print processed data
+    print(f"DEBUG - tenure: {df['tenure'].values[0]}, Tenure_Group: {df['Tenure_Group'].values[0]}")
+    print(f"DEBUG - Number_of_Services: {df['Number_of_Services'].values[0]}")
+    print(f"DEBUG - Contract: {df['Contract'].values[0]}, PaymentMethod: {df['PaymentMethod'].values[0]}")
     
     # Apply preprocessor
     X = preprocessor.transform(df)
