@@ -81,7 +81,6 @@ CustumerChurning/
 │   └── Telco-Customer-Churn.csv  # Dataset
 │
 ├── notebooks/                  # Jupyter notebooks for EDA
-├── tests/                      # Unit tests
 ├── requirements.txt            # Python dependencies
 ├── .gitignore                  # Git ignore rules
 └── README.md                   # This file

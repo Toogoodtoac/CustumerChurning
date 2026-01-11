@@ -28,7 +28,7 @@ env/
 
 # Jupyter Notebook
 .ipynb_checkpoints/
-*.ipynb
+# *.ipynb  # Commented out to allow EDA notebook
 
 # IDE
 .idea/
@@ -64,3 +64,4 @@ Report.md
 Report.pdf
 Technical_Report.pdf
 generate_pdf.py
+VIDEO_SCRIPT.md

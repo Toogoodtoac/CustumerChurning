@@ -34,7 +34,7 @@
 \maketitle
 
 \begin{abstract}
-This report presents a complete machine learning solution for predicting customer churn in the telecommunications industry. We walk through every step from data exploration to model deployment, making it easy for readers to understand and replicate. The project includes four machine learning models, a REST API, and a web interface. Key finding: tenure (customer lifespan) and contract type are the strongest predictors of churn.
+This report presents a comprehensive machine learning solution for predicting customer churn in the telecommunications industry. The project encompasses the complete data science pipeline, from exploratory data analysis through model deployment. Four classification models were developed and evaluated: Logistic Regression, Random Forest, XGBoost, and Neural Network. The best-performing model achieved an F1-Score of 62.3\% and ROC-AUC of 84.1\%. A production-ready web application was developed using FastAPI and Streamlit, enabling real-time churn prediction with actionable business recommendations. Analysis reveals that customer tenure and contract type are the strongest predictors of churn behavior.
 \end{abstract}
 
 \tableofcontents
@@ -54,19 +54,19 @@ This report presents a complete machine learning solution for predicting custome
     \item Early prediction allows companies to offer incentives before customers leave
 \end{itemize}
 
-\subsection{Our Goal}
-We want to build a machine learning model that can predict which customers are likely to leave. This is a \textbf{binary classification} problem:
+\subsection{Project Objective}
+The objective of this project is to develop a machine learning model capable of predicting customer churn. This is formulated as a \textbf{binary classification} problem:
 \begin{itemize}
     \item \textbf{Input:} Customer information (demographics, services, billing)
-    \item \textbf{Output:} Will this customer churn? (Yes or No)
+    \item \textbf{Output:} Churn prediction (Yes or No)
 \end{itemize}
 
-\subsection{Dataset Used}
-We used the \textbf{IBM Telco Customer Churn} dataset with:
+\subsection{Dataset}
+This project utilizes the \textbf{IBM Telco Customer Churn} dataset with the following characteristics:
 \begin{itemize}
-    \item 7,043 customers
+    \item 7,043 customer records
     \item 21 features per customer
-    \item 26.5\% of customers actually churned (left the company)
+    \item 26.5\% churn rate (class imbalance)
 \end{itemize}
 
 %==============================================================================
@@ -214,7 +214,7 @@ Very Loyal & 72+ months & 7\% (lowest) \\
 
 \textbf{Feature 2: Number of Services}
 
-We counted how many additional services each customer uses (security, backup, streaming, etc.). More services = more "locked in" = less likely to leave.
+This feature aggregates the count of additional services subscribed by each customer, including online security, online backup, device protection, tech support, streaming TV, and streaming movies. The underlying hypothesis is that customers with multiple service subscriptions demonstrate higher engagement and switching costs, thereby reducing churn probability.
 
 \begin{figure}[H]
 \centering
@@ -293,13 +293,52 @@ For churn prediction, we use several metrics from the confusion matrix:
 \section{Model Training and Results}
 %==============================================================================
 
-\subsection{Models We Tested}
+\subsection{Models Implemented}
 \begin{enumerate}
-    \item \textbf{Logistic Regression:} Simple, interpretable baseline
-    \item \textbf{Random Forest:} Ensemble of 100 decision trees
-    \item \textbf{XGBoost:} Advanced gradient boosting algorithm
-    \item \textbf{Neural Network:} Deep learning with 2 hidden layers (16 and 8 neurons)
+    \item \textbf{Logistic Regression:} Linear classifier with sigmoid activation
+    \item \textbf{Random Forest:} Ensemble of 100 decision trees with bootstrap aggregation
+    \item \textbf{XGBoost:} Gradient boosting with regularization
+    \item \textbf{Neural Network:} Feedforward network with 2 hidden layers (16 and 8 neurons)
 \end{enumerate}
+
+\subsection{Loss Function and Optimization}
+
+\textbf{Loss Function:} For this binary classification problem, all models utilize \textbf{Binary Cross-Entropy Loss} (also known as Log Loss):
+
+$$\mathcal{L} = -\frac{1}{N}\sum_{i=1}^{N}\left[y_i \log(\hat{y}_i) + (1-y_i)\log(1-\hat{y}_i)\right]$$
+
+where:
+\begin{itemize}
+    \item $N$ = number of samples
+    \item $y_i$ = actual label (0 or 1)
+    \item $\hat{y}_i$ = predicted probability of churn
+\end{itemize}
+
+\textbf{Optimization Algorithms:}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Model} & \textbf{Optimizer} & \textbf{Details} \\
+\midrule
+Logistic Regression & L-BFGS & Quasi-Newton method, max\_iter=1000 \\
+Random Forest & Gini Impurity & Information gain criterion \\
+XGBoost & Gradient Descent & learning\_rate=0.1, max\_depth=6 \\
+Neural Network & Adam & lr=0.001, $\beta_1$=0.9, $\beta_2$=0.999 \\
+\bottomrule
+\end{tabular}
+\caption{Optimization algorithms used for each model.}
+\end{table}
+
+\textbf{Neural Network Architecture:}
+\begin{itemize}
+    \item Input layer: 30 features (after preprocessing)
+    \item Hidden layer 1: 16 neurons, ReLU activation, Dropout(0.3)
+    \item Hidden layer 2: 8 neurons, ReLU activation, Dropout(0.3)
+    \item Output layer: 1 neuron, Sigmoid activation
+    \item Training: 50 epochs, batch\_size=32, early stopping with patience=10
+\end{itemize}
 
 \subsection{Results Comparison}
 
@@ -339,7 +378,7 @@ XGBoost & 78.1\% & 58.5\% & 60.7\% & 59.6\% & 83.4\% \\
     \item \textbf{Best Precision:} XGBoost (58.5\%)---fewest false alarms
 \end{itemize}
 
-\textbf{Recommendation:} Use Logistic Regression if you want to catch as many churners as possible, even at the cost of some false alarms.
+\textbf{Recommendation:} For companies prioritizing maximum churner detection over precision, Logistic Regression is the recommended choice due to its superior recall performance, even at the cost of increased false positives.
 
 \subsection{What Features Matter Most?}
 
@@ -431,66 +470,50 @@ For non-technical users, we built an interactive web app with rich features.
     \item Open browser: \texttt{http://localhost:8501}
 \end{enumerate}
 
-\subsection{How to Use the Application}
+\subsection{Application User Guide}
 
-\textbf{Step 1: Select a Model}
+The web application provides an intuitive interface for churn prediction. The following workflow describes the prediction process:
+
+\textbf{Step 1: Model Selection}
+
+Navigate to the sidebar panel and locate the Model Selection dropdown menu. Select the desired prediction model from the available options: Neural Network, Logistic Regression, Random Forest, or XGBoost.
+
+\textbf{Step 2: Customer Data Entry}
+
+Complete the customer information form organized into three sections:
 \begin{itemize}
-    \item In the sidebar (left side), find the \textbf{Model Selection} dropdown
-    \item Choose one of the 4 available models: Neural Network, Logistic Regression, Random Forest, or XGBoost
-    \item The selected model will be used for prediction
+    \item \textbf{Demographics:} Gender, senior citizen status, partner, and dependents
+    \item \textbf{Services:} Phone service, internet service, and supplementary services
+    \item \textbf{Account Information:} Tenure, contract type, billing preference, payment method, and charges
 \end{itemize}
 
-\textbf{Step 2: Enter Customer Information}
+\textbf{Step 3: Prediction Execution}
+
+Click the \textbf{Predict Churn} button to generate the prediction. The system displays:
 \begin{itemize}
-    \item \textbf{Demographics (Column 1):} Select gender, senior citizen status, partner, and dependents
-    \item \textbf{Services (Column 2):} Choose phone service, internet service, and additional services
-    \item \textbf{Account Info (Column 3):} Set tenure (months), contract type, billing, payment method, and charges
+    \item Churn prediction (Yes/No)
+    \item Churn probability (0-100\%)
+    \item Risk classification: Low (green), Medium (yellow), or High (red)
 \end{itemize}
 
-\textbf{Step 3: Get Prediction}
+\textbf{Step 4: Business Recommendations}
+
+Based on the risk classification, the application provides targeted retention strategies:
 \begin{itemize}
-    \item Click the \textbf{Predict Churn} button
-    \item View the results:
-    \begin{itemize}
-        \item \textbf{Churn Prediction:} Yes or No
-        \item \textbf{Churn Probability:} Percentage (0-100\%)
-        \item \textbf{Risk Level:} Low (green), Medium (yellow), or High (red)
-    \end{itemize}
+    \item \textbf{High Risk:} Immediate intervention with discount offers or service upgrades
+    \item \textbf{Medium Risk:} Proactive engagement through loyalty programs
+    \item \textbf{Low Risk:} Standard service continuation
 \end{itemize}
 
-\textbf{Step 4: Review Recommendations}
-\begin{itemize}
-    \item Based on the risk level, the app provides actionable recommendations
-    \item For high-risk customers: Consider offering discounts or service upgrades
-    \item For medium-risk customers: Engage with loyalty programs
-    \item For low-risk customers: Continue current service
-\end{itemize}
+\subsection{Preprocessing Pipeline}
 
-\textbf{Step 5: View Customer Profile (Optional)}
-\begin{itemize}
-    \item Click on \textbf{Customer Profile Summary} to expand
-    \item Review all entered customer data in table format
-\end{itemize}
-
-\subsection{Preprocessing in Deployment}
-When making predictions in production, the API performs these preprocessing steps automatically:
+During inference, the API automatically applies the following preprocessing steps:
 
 \begin{enumerate}
-    \item \textbf{Feature Engineering:}
-    \begin{itemize}
-        \item Computes Tenure\_Group from tenure value
-        \item Computes Number\_of\_Services by counting "Yes" values
-    \end{itemize}
-    
-    \item \textbf{Label Encoding:} Converts binary columns to 0/1:
-    \begin{itemize}
-        \item gender: Female$\rightarrow$0, Male$\rightarrow$1
-        \item Partner, Dependents, PhoneService, PaperlessBilling: No$\rightarrow$0, Yes$\rightarrow$1
-    \end{itemize}
-    
-    \item \textbf{Preprocessing Pipeline:} Applies saved ColumnTransformer (scaling and one-hot encoding)
-    
-    \item \textbf{Prediction:} Uses selected model to predict probability
+    \item \textbf{Feature Engineering:} Computation of Tenure\_Group and Number\_of\_Services
+    \item \textbf{Label Encoding:} Binary feature transformation (Female$\rightarrow$0, Male$\rightarrow$1; No$\rightarrow$0, Yes$\rightarrow$1)
+    \item \textbf{Feature Transformation:} Application of ColumnTransformer for scaling and one-hot encoding
+    \item \textbf{Model Inference:} Probability prediction using the selected model
 \end{enumerate}
 
 %==============================================================================
