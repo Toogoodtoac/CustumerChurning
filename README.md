@@ -48,10 +48,6 @@ uvicorn app.api:app --reload --port 8000
 streamlit run app/streamlit_app.py
 ```
 
-### 6. Access the Application
-- 🌐 **Web App:** http://localhost:8501
-- 📚 **API Docs:** http://localhost:8000/docs
-
 ---
 
 ## 📁 Project Structure
