@@ -34,7 +34,7 @@
 \maketitle
 
 \begin{abstract}
-This report presents a comprehensive machine learning solution for predicting customer churn in the telecommunications industry. The project encompasses the complete data science pipeline, from exploratory data analysis through model deployment. Four classification models were developed and evaluated: Logistic Regression, Random Forest, XGBoost, and Neural Network. The best-performing model achieved an F1-Score of 62.3\% and ROC-AUC of 84.1\%. A production-ready web application was developed using FastAPI and Streamlit, enabling real-time churn prediction with actionable business recommendations. Analysis reveals that customer tenure and contract type are the strongest predictors of churn behavior.
+This report presents a comprehensive machine learning solution for predicting customer churn in the telecommunications industry. The project encompasses the complete data science pipeline, from exploratory data analysis through model deployment.
 \end{abstract}
 
 \tableofcontents
@@ -83,7 +83,7 @@ Our target variable is \textbf{Churn} with two values:
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.85\textwidth]{churn_distribution.png}
-\caption{The data is imbalanced---most customers stayed. This is typical in real-world churn scenarios.}
+\caption{The data is imbalanced,most customers stayed. This is typical in real-world churn scenarios.}
 \end{figure}
 
 \textbf{Important note:} Because only 26.5\% of customers churned, a model that always predicts "No churn" would be 73.5\% accurate but completely useless! This is why we use metrics like F1-Score and Recall instead of just Accuracy.
@@ -281,7 +281,7 @@ For churn prediction, we use several metrics from the confusion matrix:
 \textbf{Key Formulas:}
 
 \begin{align}
-\text{Accuracy} &= \frac{TP + TN}{\text{Total}} \quad \text{(Overall correctness---misleading for imbalanced data!)}\\[8pt]
+\text{Accuracy} &= \frac{TP + TN}{\text{Total}} \quad \text{(Overall correctness, misleading for imbalanced data!)}\\[8pt]
 \text{Precision} &= \frac{TP}{TP + FP} \quad \text{(Of those we flagged, how many were right?)}\\[8pt]
 \text{Recall} &= \frac{TP}{TP + FN} \quad \text{(Of actual churners, how many did we catch?)}\\[8pt]
 \text{F1-Score} &= 2 \times \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}} \quad \text{(Balance of both)}
@@ -374,8 +374,8 @@ XGBoost & 78.1\% & 58.5\% & 60.7\% & 59.6\% & 83.4\% \\
 \subsection{Which Model is Best?}
 \begin{itemize}
     \item \textbf{Best F1-Score:} Neural Network (62.3\%)
-    \item \textbf{Best Recall:} Logistic Regression (80\%)---catches 80\% of churners!
-    \item \textbf{Best Precision:} XGBoost (58.5\%)---fewest false alarms
+    \item \textbf{Best Recall:} Logistic Regression (80\%),catches 80\% of churners!
+    \item \textbf{Best Precision:} XGBoost (58.5\%),fewest false alarms
 \end{itemize}
 
 \textbf{Recommendation:} For companies prioritizing maximum churner detection over precision, Logistic Regression is the recommended choice due to its superior recall performance, even at the cost of increased false positives.
@@ -413,7 +413,7 @@ We created a web service that accepts customer data and returns predictions.
 \textbf{Key Features:}
 \begin{itemize}
     \item Loads all 4 models on startup (Neural Network, Logistic Regression, Random Forest, XGBoost)
-    \item Supports \textbf{model selection}---users can choose which model to use
+    \item Supports \textbf{model selection},users can choose which model to use
     \item Automatic feature engineering (Tenure\_Group, Number\_of\_Services)
     \item Automatic label encoding for binary columns
     \item Risk level classification (Low/Medium/High) with recommendations
