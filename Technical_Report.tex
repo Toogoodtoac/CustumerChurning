@@ -89,7 +89,7 @@ Our target variable is \textbf{Churn} with two values:
 \textbf{Important note:} Because only 26.5\% of customers churned, a model that always predicts "No churn" would be 73.5\% accurate but completely useless! This is why we use metrics like F1-Score and Recall instead of just Accuracy.
 
 \subsection{What Makes Customers Leave?}
-We analyzed various factors to understand what drives churn:
+Various factors were analyzed to understand what drives churn:
 
 \begin{figure}[H]
 \centering
@@ -223,14 +223,14 @@ This feature aggregates the count of additional services subscribed by each cust
 \end{figure}
 
 \subsection{Step 4: Train/Test Split}
-We split the data into two parts:
+The data was split into two parts:
 \begin{itemize}
     \item \textbf{Training set (80\%):} 5,634 customers for teaching the model
     \item \textbf{Test set (20\%):} 1,409 customers for honest evaluation
 \end{itemize}
 
 \begin{tcolorbox}[colback=red!5!white,colframe=red!75!black,title=Critical Rule]
-We split the data \textbf{before} applying SMOTE. If we SMOTE first, fake data can leak into the test set and give us inflated (wrong) results!
+The data was split \textbf{before} applying SMOTE. If SMOTE is applied first, fake data can leak into the test set and give inflated (wrong) results!
 \end{tcolorbox}
 
 \subsection{Step 5: SMOTE (Handling Class Imbalance)}
@@ -408,7 +408,7 @@ The deployment consists of two main components:
 \end{enumerate}
 
 \subsection{REST API (FastAPI)}
-We created a web service that accepts customer data and returns predictions.
+A web service was created that accepts customer data and returns predictions.
 
 \textbf{Key Features:}
 \begin{itemize}
@@ -443,7 +443,7 @@ GET & \texttt{/model-info} & Get model details \\
 \end{enumerate}
 
 \subsection{Web Interface (Streamlit)}
-For non-technical users, we built an interactive web app with rich features.
+For non-technical users, an interactive web app with rich features was developed.
 
 \textbf{Key Features:}
 \begin{itemize}
@@ -522,7 +522,7 @@ During inference, the API automatically applies the following preprocessing step
 
 \textbf{What went wrong initially:}
 
-We accidentally applied SMOTE before splitting the data. This caused synthetic (fake) churners to appear in our test set.
+Initially, SMOTE was accidentally applied before splitting the data. This caused synthetic (fake) churners to appear in the test set.
 
 \textbf{The evidence:}
 \begin{itemize}
@@ -564,7 +564,7 @@ Fiber optic internet & 42\% & Check service quality issues \\
 \section{Conclusion}
 %==============================================================================
 
-\subsection{What We Achieved}
+\subsection{Achievements}
 \begin{enumerate}
     \item Built a complete ML pipeline from data to deployment
     \item Trained 4 models including deep learning
